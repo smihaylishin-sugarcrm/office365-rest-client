@@ -4,11 +4,11 @@ import json
 
 class Office365ClientError(Exception):
 
-    def __init__(self, status_code, data):
+    def __init__(self, status_code: int = 0, data: dict | None = None, error_message: str | None = None):
         self.status_code = status_code
         data = data or {}
         self.error_code = data.get('error', {}).get('code', '')
-        self.error_message = data.get('error', {}).get('message', '')
+        self.error_message = error_message or data.get('error', {}).get('message', '')
         super(Office365ClientError, self).__init__('{}: {}: {}'.format(
             status_code,
             self.error_code,

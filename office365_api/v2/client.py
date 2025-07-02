@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
-from .services import BatchService, SubscriptionFactory, UserServicesFactory
+
+
+from .factories.user_factory import UserServicesFactory
+from .services import BatchService, SubscriptionService
 
 
 class MicrosoftGraphClient(object):
@@ -9,7 +12,7 @@ class MicrosoftGraphClient(object):
 
         self.users = UserServicesFactory(self)
         self.me = self.users('me')
-        self.subscription = SubscriptionFactory(self)()
+        self.subscription = SubscriptionService(self, '')
 
     def new_batch_request(self, beta=True):
         return BatchService(client=self, beta=beta)

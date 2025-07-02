@@ -1,16 +1,13 @@
 import json
-import urllib.request, urllib.parse, urllib.error
-
-
-"""
-Batch Request to JSON.
-
-Patches the execute_request() to not fire the http request. Instead,
-force to return a json data of the request for batch processing.
-"""
-
+import urllib.parse
 
 def become_request(self, method, path, query_params=None, headers=None, body=None, parse_json_result=True):
+    """
+    Batch Request to JSON.
+
+    Patches the execute_request() to not fire the http request. Instead,
+    force to return a json data of the request for batch processing.
+    """
     default_headers = {'Content-Type': 'application/json'}
     if headers:
         default_headers.update(headers)
