@@ -2,8 +2,8 @@
 from setuptools import find_packages, setup
 
 setup(name='office365-rest-client',
-      version='3.5.1',
-      description='Python api wrapper for Office365 API v3.5.1',
+      version='3.5.2',
+      description='Python api wrapper for Office365 API v3.5.2',
       author='SugarCRM',
       packages=find_packages(),
       zip_safe=False)

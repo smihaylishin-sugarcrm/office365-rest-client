@@ -1,10 +1,15 @@
-import urllib.parse
 import logging
-from requests import HTTPError
-from requests.exceptions import ChunkedEncodingError, ConnectionError as RequestsConnectionError, JSONDecodeError as RequestsJSONDecodeError
+import urllib.parse
 
-from ..exceptions import Office365ClientError, Office365ServerError
-from ..consts import DEFAULT_MAX_ENTRIES, RETRIES_COUNT, RESPONSE_FORMAT_ODATA, RESPONSE_FORMAT_RAW
+from requests import HTTPError
+from requests.exceptions import ChunkedEncodingError
+from requests.exceptions import ConnectionError as RequestsConnectionError
+from requests.exceptions import JSONDecodeError as RequestsJSONDecodeError
+
+from ..consts import (DEFAULT_MAX_ENTRIES, RESPONSE_FORMAT_ODATA,
+                      RESPONSE_FORMAT_RAW, RETRIES_COUNT)
+from ..exceptions import (Office365ClientError, Office365QuotaExceededError,
+                          Office365ServerError)
 
 logger = logging.getLogger(__name__)
 
@@ -63,6 +68,16 @@ class BaseService(object):
                         error_data = e.response.json()
                     except (ValueError, RequestsJSONDecodeError):
                         error_data = {'error': {'message': e.response.content, 'code': 'unknown'}}
+                    if e.response.status_code == 429:
+                        retry_after = None
+                        try:
+                            retry_after = int(
+                                e.response.headers.get('Retry-After'))
+                        except Exception as ex:
+                            logger.error(
+                                'Error parsing Retry-After header: %s', ex)
+                        raise Office365QuotaExceededError(
+                            data=error_data, retry_after=retry_after) from e
                     raise Office365ClientError(e.response.status_code, error_data) from e
                 else:
                     raise Office365ServerError(e.response.status_code, e.response.content) from e

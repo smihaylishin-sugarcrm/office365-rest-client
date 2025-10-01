@@ -41,6 +41,21 @@ class Office365ClientError(Exception):
             'Office365ClientError', self.status_code, self.error_code, self.error_message)
 
 
+class Office365QuotaExceededError(Office365ClientError):
+    '''
+    Exception raised when quota limit is exceeded (HTTP status code 429).
+    Attributes:
+        data -- error data returned by the server
+        error_message -- explanation of the error returned by the server
+        retry_after -- time in seconds to wait before retrying the request
+    '''
+
+    def __init__(self, data=None, error_message=None, retry_after: str | int | None = None):
+
+        super(Office365QuotaExceededError, self).__init__(
+            status_code=429, data=data, error_message=error_message)
+        self.retry_after = retry_after
+
 class Office365ServerError(Exception):
 
     def __init__(self, status_code, body):

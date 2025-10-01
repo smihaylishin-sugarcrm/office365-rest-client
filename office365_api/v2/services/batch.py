@@ -4,11 +4,13 @@ from requests import HTTPError
 from requests.exceptions import JSONDecodeError as RequestsJSONDecodeError
 
 from office365_api.v2.exceptions import (Office365ClientError,
+                                         Office365QuotaExceededError,
                                          Office365ServerError)
 
 from .base import BaseService
 
 logger = logging.getLogger(__name__)
+
 
 class BatchService(BaseService):
     def __init__(self, client, beta=True):
@@ -35,7 +37,8 @@ class BatchService(BaseService):
 
     def _execute(self, requests):
         if self.is_empty:
-            raise Office365ClientError(error_message='No requests to execute in a batch')
+            raise Office365ClientError(
+                error_message='No requests to execute in a batch')
         method = 'POST'
         default_headers = {'Content-Type': 'application/json'}
         logger.info('{}: {} with {}x requests'.format(
@@ -54,6 +57,16 @@ class BatchService(BaseService):
                 except (ValueError, RequestsJSONDecodeError):
                     error_data = {
                         'error': {'message': e.response.content, 'code': 'unknown'}}
+                if e.response.status_code == 429:
+                    retry_after = None
+                    try:
+                        retry_after = int(
+                            e.response.headers.get('Retry-After'))
+                    except Exception as ex:
+                        logger.error(
+                            'Error parsing Retry-After header: %s', ex)
+                    raise Office365QuotaExceededError(
+                        data=error_data, retry_after=retry_after) from e
                 raise Office365ClientError(e.response.status_code, error_data)
             else:
                 raise Office365ServerError(
@@ -76,6 +89,16 @@ class BatchService(BaseService):
             try:
                 if response['status'] >= 300:
                     error_data = response.get('body')
+                    if response['status'] == 429:
+                        retry_after = None
+                        try:
+                            retry_after = int(
+                                response['headers'].get('Retry-After'))
+                        except Exception as ex:
+                            logger.warning(
+                                'Error parsing Retry-After header: %s', ex)
+                        raise Office365QuotaExceededError(
+                            data=error_data, retry_after=retry_after)
                     raise Office365ClientError(response['status'], error_data)
             except Office365ClientError as e:
                 exception = e
